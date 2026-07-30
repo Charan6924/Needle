@@ -11,30 +11,19 @@ import needle as ndl
 
 
 def parse_mnist(image_filename, label_filename):
-    """Read an images and labels file in MNIST format.  See this page:
-    http://yann.lecun.com/exdb/mnist/ for a description of the file format.
+    with gzip.open(image_filename, 'rb') as f:
+        f.read(4)  # magic
+        num = struct.unpack('>I', f.read(4))[0]
+        rows = struct.unpack('>I', f.read(4))[0]
+        cols = struct.unpack('>I', f.read(4))[0]
+        X = np.frombuffer(f.read(), dtype=np.uint8).reshape(num, rows * cols).astype(np.float32) / 255.0
 
-    Args:
-        image_filename (str): name of gzipped images file in MNIST format
-        label_filename (str): name of gzipped labels file in MNIST format
+    with gzip.open(label_filename, 'rb') as f:
+        f.read(4)  # magic
+        num = struct.unpack('>I', f.read(4))[0]
+        y = np.frombuffer(f.read(), dtype=np.uint8).astype(np.int8)
 
-    Returns:
-        Tuple (X,y):
-            X (numpy.ndarray[np.float32]): 2D numpy array containing the loaded
-                data.  The dimensionality of the data should be
-                (num_examples x input_dim) where 'input_dim' is the full
-                dimension of the data, e.g., since MNIST images are 28x28, it
-                will be 784.  Values should be of type np.float32, and the data
-                should be normalized to have a minimum value of 0.0 and a
-                maximum value of 1.0.
-
-            y (numpy.ndarray[dypte=np.int8]): 1D numpy array containing the
-                labels of the examples.  Values should be of type np.int8 and
-                for MNIST will contain the values 0-9.
-    """
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    return X, y
 
 
 def softmax_loss(Z, y_one_hot):
@@ -53,9 +42,10 @@ def softmax_loss(Z, y_one_hot):
     Returns:
         Average softmax loss over the sample. (ndl.Tensor[np.float32])
     """
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    batch = Z.shape[0]
+    log_sum_exp = ndl.log(ndl.summation(ndl.exp(Z),axes=(1,)))
+    correct = ndl.summation(Z * y_one_hot,axes=(1,))
+    return ndl.summation(log_sum_exp-correct)/batch
 
 
 def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
@@ -82,9 +72,24 @@ def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
             W2: ndl.Tensor[np.float32]
     """
 
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    n = X.shape[0]
+    for i in range(0, n, batch):
+        end = min(i + batch, n)
+        X_batch = ndl.Tensor(X[i:end])
+
+        y_one_hot = np.zeros((end - i, W2.shape[1]))
+        y_one_hot[np.arange(end - i), y[i:end]] = 1
+        y_one_hot = ndl.Tensor(y_one_hot)
+
+        logits = ndl.relu(X_batch @ W1) @ W2
+        loss = softmax_loss(logits, y_one_hot)
+
+        loss.backward()
+
+        W1.data = (W1 - lr * W1.grad).data
+        W2.data = (W2 - lr * W2.grad).data
+
+    return W1, W2
 
 
 ### CODE BELOW IS FOR ILLUSTRATION, YOU DO NOT NEED TO EDIT
