@@ -5,6 +5,7 @@ from needle.autograd import Tensor
 from needle import ops
 import needle.init as init
 import numpy as np
+import needle as ndl
 
 
 class Parameter(Tensor):
@@ -84,15 +85,17 @@ class Linear(Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        self.weight = Parameter(init.kaiming_uniform(fan_in=in_features,fan_out=out_features,shape=(in_features,out_features),device=device,dtype=dtype))
+        if bias:
+            self.bias = Parameter(init.kaiming_uniform(fan_in=out_features,fan_out=1,shape = (1,out_features,), device=device,dtype=dtype))
+        else:
+            self.bias = None
 
     def forward(self, X: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        out = ndl.matmul(X,self.weight)
+        if self.bias is not None:
+            out = out + self.bias.broadcast_to(out.shape)
+        return out
 
 
 class Flatten(Module):
