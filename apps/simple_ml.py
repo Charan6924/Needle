@@ -77,7 +77,7 @@ def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
         end = min(i + batch, n)
         X_batch = ndl.Tensor(X[i:end])
 
-        y_one_hot = np.zeros((end - i, W2.shape[1]))
+        y_one_hot = np.zeros((end - i, W2.shape[1]), dtype=np.float32)
         y_one_hot[np.arange(end - i), y[i:end]] = 1
         y_one_hot = ndl.Tensor(y_one_hot)
 

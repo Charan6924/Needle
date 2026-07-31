@@ -122,7 +122,7 @@ class DivScalar(TensorOp):
         self.scalar = scalar
 
     def compute(self, a):
-        return a / self.scalar
+        return (a / self.scalar).astype(a.dtype)
 
     def gradient(self, out_grad, node):
         return out_grad / self.scalar
@@ -277,7 +277,7 @@ class ReLU(TensorOp):
 
     def gradient(self, out_grad, node):
         a, = node.inputs
-        return out_grad * (a>0)
+        return out_grad * (a.cached_data>0)
 
 
 def relu(a):
