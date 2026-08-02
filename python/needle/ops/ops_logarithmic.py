@@ -10,15 +10,20 @@ import numpy as array_api
 
 class LogSoftmax(TensorOp):
     def compute(self, Z: NDArray) -> NDArray:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        m = array_api.max(Z,axis=-1,keepdims=True)
+        m_broadcast = array_api.broadcast_to(m,Z.shape)
+        exp_z = array_api.exp(Z - m_broadcast)
+        exp_sum = array_api.sum(exp_z, axis=-1,keepdims=True)
+        log_sum_exp = array_api.log(exp_sum) + m
+        return Z - array_api.broadcast_to(log_sum_exp,Z.shape)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
-
+        softmax = ndl.exp(node)
+        sum_out_grad = ndl.summation(out_grad,axes=(-1,))
+        new_shape = list(node.shape)
+        new_shape[-1] = 1
+        sum_out_grad_broadcast = ndl.broadcast_to(ndl.reshape(sum_out_grad, tuple(new_shape)), node.shape)
+        return out_grad - (softmax *sum_out_grad_broadcast) 
 
 def logsoftmax(a: Tensor) -> Tensor:
     return LogSoftmax()(a)
