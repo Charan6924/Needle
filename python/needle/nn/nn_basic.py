@@ -101,9 +101,13 @@ class Linear(Module):
 
 class Flatten(Module):
     def forward(self, X: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        # multiplies all non batch dims together and returns (B,X1*X2*X3....)
+        b = X.shape[0]
+        flat_dim = 1
+        for dim in X.shape[1:]:
+            flat_dim *= dim
+        return ndl.reshape(X,(b,flat_dim))
+        
 
 
 class ReLU(Module):
