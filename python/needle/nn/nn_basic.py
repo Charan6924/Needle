@@ -1,5 +1,6 @@
 """The module.
 """
+from numpy import array_api
 from typing import Any
 from needle.autograd import Tensor
 from needle import ops
@@ -122,9 +123,13 @@ class Sequential(Module):
 
 class SoftmaxLoss(Module):
     def forward(self, logits: Tensor, y: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        ### uses init.one_hot and logsumexp implementation
+        y_one_hot = init.one_hot(n=logits.shape[-1],i=y,device=logits.device,dtype=logits.dtype)
+        z_y = ndl.summation(logits * y_one_hot,axes=(-1,))
+        lse = ndl.logsumexp(logits,axes=(-1,))
+        losses = lse - z_y
+        return ndl.summation(losses)/logits.shape[0]
+
 
 
 class BatchNorm1d(Module):
@@ -149,15 +154,18 @@ class LayerNorm1d(Module):
         super().__init__()
         self.dim = dim
         self.eps = eps
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        self.weight = Parameter(init.ones(self.dim, device=device, dtype=dtype))
+        self.bias = Parameter(init.zeros(self.dim, device=device, dtype=dtype))
 
     def forward(self, x: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
-
+        mu = ndl.summation(x,axes=(-1,))/self.dim
+        mu_broadcast = ndl.broadcast_to(ndl.reshape(mu, (x.shape[0], 1)), x.shape)
+        var = ndl.summation((x - mu_broadcast) ** 2, axes=(1,)) / self.dim
+        var_broadcast = ndl.broadcast_to(ndl.reshape(var, (x.shape[0], 1)), x.shape)
+        x_norm = (x - mu_broadcast)/ ndl.power_scalar(var_broadcast + self.eps,0.5)
+        w_broadcast = ndl.broadcast_to(ndl.reshape(self.weight, (1, self.dim)), x.shape)
+        b_broadcast = ndl.broadcast_to(ndl.reshape(self.bias, (1, self.dim)), x.shape)
+        return w_broadcast * x_norm + b_broadcast
 
 class Dropout(Module):
     def __init__(self, p: float = 0.5) -> None:
