@@ -50,8 +50,9 @@ print(a.grad)  # gradient of loss w.r.t. a
 | `Sequential` | Applies modules in order |
 | `SoftmaxLoss` | Softmax cross-entropy loss (log-sum-exp formulation) |
 | `LayerNorm1d` | Layer normalization over the feature dimension |
-
-In progress: `BatchNorm1d`, `Dropout`, `Residual`.
+| `BatchNorm1d` | Batch normalization with running mean/variance; learnable weight and bias |
+| `Dropout` | Randomly zeroes inputs with probability `p` during training |
+| `Residual` | Adds the module's input to its output |
 
 ## Initializers
 
@@ -66,13 +67,11 @@ All accept `shape=`, `device=`, `dtype=` kwargs and default to `(fan_in, fan_out
 
 `needle.data` provides `Dataset` / `DataLoader` (batching, shuffling, transforms) with `MNISTDataset` and `NDArrayDataset` implementations, plus image transforms `RandomFlipHorizontal` and `RandomCrop`.
 
-In progress: `DataLoader.__iter__/__next__`, `RandomFlipHorizontal`, `RandomCrop`, `MNISTDataset`.
+In progress: `MNISTDataset`.
 
 ## Optimizers
 
-`needle.optim` provides `Optimizer` base with `SGD` and `Adam` classes.
-
-In progress: `SGD.step`, `Adam.step`, `clip_grad_norm`.
+`needle.optim` provides `Optimizer` base with `SGD` (momentum, weight decay, gradient clipping) and `Adam` (first/second moment estimates).
 
 ## Training Example
 
@@ -81,11 +80,10 @@ import needle as ndl
 import needle.nn as nn
 
 model = nn.Sequential(nn.Linear(784, 100), nn.ReLU(), nn.Linear(100, 10))
+opt = ndl.optim.Adam(model.parameters(), lr=0.001)
+
 logits = model(X)                      # X: (batch, 784)
 loss = nn.SoftmaxLoss()(logits, y_one_hot)
 loss.backward()
-
-# SGD update
-for p in model.parameters():
-    p.data = (p - lr * p.grad).data
+opt.step()
 ```
