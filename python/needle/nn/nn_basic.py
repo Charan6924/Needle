@@ -142,16 +142,33 @@ class BatchNorm1d(Module):
         self.dim = dim
         self.eps = eps
         self.momentum = momentum
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        self.weight = Parameter(init.ones(self.dim, device=device, dtype=dtype))
+        self.bias = Parameter(init.zeros(self.dim, device=device, dtype=dtype))
+        self.running_mean = init.zeros(self.dim,device=device,dtype=dtype)
+        self.running_var = init.ones(self.dim,device=device,dtype=dtype)
 
     def forward(self, x: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        if self.training:
+            mean = ndl.summation(x,axes=(0,))/x.shape[0]
+            mean_broadcast = ndl.broadcast_to(ndl.reshape(mean, (1,self.dim)), x.shape)
+            var = ndl.summation((x - mean_broadcast) ** 2, axes=(0,)) / x.shape[0]
+            var_broadcast = ndl.broadcast_to(ndl.reshape(var, (1,self.dim)), x.shape)
 
+            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
+            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var
 
+            y = (x - mean_broadcast)/ndl.power_scalar(var_broadcast+self.eps,0.5)
+            w_broadcast = ndl.broadcast_to(ndl.reshape(self.weight, (1, self.dim)), x.shape)
+            b_broadcast = ndl.broadcast_to(ndl.reshape(self.bias, (1, self.dim)), x.shape)
+            return (w_broadcast * y) + b_broadcast
+        else:
+            mean_broadcast = ndl.broadcast_to(ndl.reshape(self.running_mean, (1,self.dim)), x.shape)
+            var_broadcast = ndl.broadcast_to(ndl.reshape(self.running_var, (1,self.dim)), x.shape)
+
+            y = (x - mean_broadcast)/ndl.power_scalar(var_broadcast+self.eps,0.5)
+            w_broadcast = ndl.broadcast_to(ndl.reshape(self.weight, (1, self.dim)), x.shape)
+            b_broadcast = ndl.broadcast_to(ndl.reshape(self.bias, (1, self.dim)), x.shape)
+            return (w_broadcast * y) + b_broadcast
 
 class LayerNorm1d(Module):
     def __init__(self, dim: int, eps: float = 1e-5, device: Any | None = None, dtype: str = "float32") -> None:
