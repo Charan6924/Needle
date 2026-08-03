@@ -154,8 +154,8 @@ class BatchNorm1d(Module):
             var = ndl.summation((x - mean_broadcast) ** 2, axes=(0,)) / x.shape[0]
             var_broadcast = ndl.broadcast_to(ndl.reshape(var, (1,self.dim)), x.shape)
 
-            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
-            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var
+            self.running_mean = ((1 - self.momentum) * self.running_mean + self.momentum * mean).detach()
+            self.running_var = ((1 - self.momentum) * self.running_var + self.momentum * var).detach()
 
             y = (x - mean_broadcast)/ndl.power_scalar(var_broadcast+self.eps,0.5)
             w_broadcast = ndl.broadcast_to(ndl.reshape(self.weight, (1, self.dim)), x.shape)
