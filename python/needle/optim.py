@@ -67,11 +67,30 @@ class Adam(Optimizer):
         self.eps = eps
         self.weight_decay = weight_decay
         self.t = 0
-
-        self.m = {}
+        self.params = params
+        self.u = {}
         self.v = {}
 
     def step(self):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        self.t += 1 
+        for param in self.params:
+            if param.grad is None:
+                continue
+            
+            grad = param.grad.data
+            if self.weight_decay > 0:
+                grad = grad + (self.weight_decay * param.data)
+
+            prev_u = self.u.get(param,ndl.zeros_like(param.data))
+            prev_v = self.v.get(param,ndl.zeros_like(param.data))
+
+            next_u = (self.beta1 * prev_u) + ((1 - self.beta1) * grad)
+            next_v = (self.beta2 * prev_v) + ((1 - self.beta2) * ndl.power_scalar(grad,2))
+            
+            self.u[param] = next_u
+            self.v[param] = next_v
+
+            u_corrected = next_u/(1-(self.beta1**self.t))
+            v_corrected = next_v/(1-(self.beta2**self.t))
+
+            param.data = param.data - self.lr * u_corrected / (ndl.power_scalar(v_corrected, 0.5) + self.eps)
